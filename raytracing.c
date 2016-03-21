@@ -482,7 +482,6 @@ void *raytracing(void *para)
     calculateBasisVectors(u, v, w, view);
 
     idx_stack stk;
-
     int factor = sqrt(SAMPLES);
     for (int j = begin_col; j < finish_col; j++) {
         for (int i = 0; i < width; i++) {

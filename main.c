@@ -75,6 +75,8 @@ int main()
     threadx=(pthread_t*)malloc(4*sizeof(pthread_t));
     for(int i=0; i<4; i++) {
         pthread_create(&threadx[i],NULL,&raytracing,&threadpara[i]);
+    }
+    for(int i=0; i<4; i++) {
         pthread_join(threadx[i],NULL);
     }
 
