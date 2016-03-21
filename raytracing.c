@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
+#include <pthread.h>
 #include "math-toolkit.h"
 #include "primitives.h"
 #include "raytracing.h"
 #include "idx_stack.h"
+#include "raythread.h"
 
 #define MAX_REFLECTION_BOUNCES	3
 #define MAX_DISTANCE 1000000000000.0
@@ -453,11 +455,26 @@ static unsigned int ray_color(const point3 e, double t,
 }
 
 /* @param background_color this is not ambient light */
+/*
 void raytracing(uint8_t *pixels, color background_color,
                 rectangular_node rectangulars, sphere_node spheres,
                 light_node lights, const viewpoint *view,
                 int width, int height)
+*/
+void *raytracing(void *para)
 {
+    struct parameter *threadpara=(struct parameter*)para;
+    uint8_t *pixels =threadpara->pixels;
+    light_node lights=threadpara->lights;
+    rectangular_node rectangulars=threadpara->rectangulars;
+    sphere_node spheres=threadpara->spheres;
+    color background_color;
+    memcpy( background_color,threadpara->background,sizeof(color));
+    const viewpoint *view = threadpara-> view;
+    int begin_col =threadpara->begin_col;
+    int finish_col =threadpara->finish_col;
+    int  width=threadpara->width;
+    int height=threadpara->height;
     point3 u, v, w, d;
     color object_color = { 0.0, 0.0, 0.0 };
 
@@ -467,7 +484,7 @@ void raytracing(uint8_t *pixels, color background_color,
     idx_stack stk;
 
     int factor = sqrt(SAMPLES);
-    for (int j = 0; j < height; j++) {
+    for (int j = begin_col; j < finish_col; j++) {
         for (int i = 0; i < width; i++) {
             double r = 0, g = 0, b = 0;
             /* MSAA */
@@ -495,4 +512,5 @@ void raytracing(uint8_t *pixels, color background_color,
             }
         }
     }
+    return 0;
 }

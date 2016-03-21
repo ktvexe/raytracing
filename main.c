@@ -2,14 +2,18 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
-
+#include <string.h>
+#include <pthread.h>
 #include "primitives.h"
 #include "raytracing.h"
+#include "raythread.h"
 
 #define OUT_FILENAME "out.ppm"
 
 #define ROWS 512
 #define COLS 512
+
+
 
 static void write_to_ppm(FILE *outfile, uint8_t *pixels,
                          int width, int height)
@@ -33,6 +37,10 @@ static double diff_in_second(struct timespec t1, struct timespec t2)
 
 int main()
 {
+    /*thread variable*/
+    pthread_t *threadx;
+    struct parameter *threadpara;
+
     uint8_t *pixels;
     light_node lights = NULL;
     rectangular_node rectangulars = NULL;
@@ -49,8 +57,30 @@ int main()
     printf("# Rendering scene\n");
     /* do the ray tracing with the given geometry */
     clock_gettime(CLOCK_REALTIME, &start);
-    raytracing(pixels, background,
-               rectangulars, spheres, lights, &view, ROWS, COLS);
+
+    /*****create parameter which thread used****/
+    threadpara =(struct parameter*)malloc(4*sizeof(struct parameter));
+    for(int i =0; i<4; i++) {
+        threadpara[i].begin_col =COLS*((double)i/4.0);
+        threadpara[i].finish_col =COLS*((double)(i+1.0)/4.0);
+        threadpara[i].pixels =pixels;
+        threadpara[i].lights =lights;
+        threadpara[i].rectangulars = rectangulars;
+        threadpara[i].spheres =spheres;
+        memcpy( threadpara[i].background,background,sizeof(color));
+        threadpara[i].view = &view;
+        threadpara[i].width = ROWS;
+        threadpara[i].height = COLS;
+    }
+    threadx=(pthread_t*)malloc(4*sizeof(pthread_t));
+    for(int i=0; i<4; i++) {
+        pthread_create(&threadx[i],NULL,&raytracing,&threadpara[i]);
+        pthread_join(threadx[i],NULL);
+    }
+
+    /*raytracing(pixels, background,
+              rectangulars, spheres, lights, &view, ROWS, COLS);
+    */
     clock_gettime(CLOCK_REALTIME, &end);
     {
         FILE *outfile = fopen(OUT_FILENAME, "wb");
@@ -64,5 +94,6 @@ int main()
     free(pixels);
     printf("Done!\n");
     printf("Execution time of raytracing() : %lf sec\n", diff_in_second(start, end));
+    free(threadx);
     return 0;
 }
