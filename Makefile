@@ -6,7 +6,7 @@ CC ?= gcc
 CFLAGS = \
 	-std=gnu99 -Wall -O0 -g 
 LDFLAGS = \
-	-lm -lpthread
+	-lm -lpthread 
 
 ifeq ($(strip $(PROFILE)),1)
 PROF_FLAGS = -pg
@@ -38,6 +38,26 @@ use-models.h: models.inc Makefile
 	        -e 's/rectangular[0-9]/(\&&, \&rectangulars);/g' \
 	        -e 's/ = {//g' >> use-models.h
 
+calculate: calculate.c
+	$(CC) $(CFLAGS) $^ -o $@
+
+output.txt: run calculate
+	./calculate
+
+plot:runtime.txt
+	gnuplot scripts/runtime.gp
+
+
+n ?=10
+
+run:
+	n=$(n); \
+   while [ $${n} -gt 0 ] ; do \
+       ./raytracing ; \
+       n=`expr $$n - 1`; \
+   done; \
+   true
+
 clean:
 	$(RM) $(EXEC) $(OBJS) use-models.h \
-		out.ppm gmon.out
+		out.ppm gmon.out opt.txt
